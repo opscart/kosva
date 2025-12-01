@@ -1,0 +1,34 @@
+{
+  "cluster": "prod-aks",
+  "timestamp": "2024-12-01T19:00:00Z",
+  "recommendations": [
+    {
+      "type": "spot-instance",
+      "workload": "deployment/payment-api",
+      "namespace": "production",
+      "savings": 800.00,
+      "current": {
+        "cpu": "1000m",
+        "memory": "2Gi"
+      },
+      "recommended": {
+        "cpu": "1000m",
+        "memory": "2Gi"
+      }
+    },
+    {
+      "type": "right-size",
+      "workload": "deployment/logging-service",
+      "namespace": "monitoring",
+      "savings": 400.00,
+      "current": {
+        "cpu": "500m",
+        "memory": "1Gi"
+      },
+      "recommended": {
+        "cpu": "200m",
+        "memory": "512Mi"
+      }
+    }
+  ]
+}
