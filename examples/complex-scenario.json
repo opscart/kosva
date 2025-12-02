@@ -1,0 +1,46 @@
+{
+  "cluster": "prod-aks-pharma",
+  "timestamp": "2024-12-01T20:00:00Z",
+  "recommendations": [
+    {
+      "type": "spot-instance",
+      "workload": "deployment/payment-api",
+      "namespace": "production",
+      "savings": 800.00,
+      "current": {"cpu": "1000m", "memory": "2Gi"},
+      "recommended": {"cpu": "1000m", "memory": "2Gi"}
+    },
+    {
+      "type": "spot-instance",
+      "workload": "deployment/batch-processor",
+      "namespace": "background-jobs",
+      "savings": 1200.00,
+      "current": {"cpu": "2000m", "memory": "4Gi"},
+      "recommended": {"cpu": "2000m", "memory": "4Gi"}
+    },
+    {
+      "type": "right-size",
+      "workload": "deployment/logging-service",
+      "namespace": "monitoring",
+      "savings": 400.00,
+      "current": {"cpu": "500m", "memory": "1Gi"},
+      "recommended": {"cpu": "200m", "memory": "512Mi"}
+    },
+    {
+      "type": "right-size",
+      "workload": "deployment/frontend",
+      "namespace": "production",
+      "savings": 600.00,
+      "current": {"cpu": "1000m", "memory": "2Gi"},
+      "recommended": {"cpu": "500m", "memory": "256Mi"}
+    },
+    {
+      "type": "spot-instance",
+      "workload": "deployment/test-runner",
+      "namespace": "ci-cd",
+      "savings": 300.00,
+      "current": {"cpu": "500m", "memory": "1Gi"},
+      "recommended": {"cpu": "500m", "memory": "1Gi"}
+    }
+  ]
+}
