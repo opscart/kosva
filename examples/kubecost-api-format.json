@@ -1,0 +1,52 @@
+{
+  "recommendedRightSizing": [
+    {
+      "clusterId": "prod-aks",
+      "namespace": "production",
+      "controllerKind": "deployment",
+      "controllerName": "payment-api",
+      "container": "payment-api",
+      "recommendations": {
+        "cpu": {
+          "current": 1000,
+          "recommended": 500,
+          "monthlySavings": 200
+        },
+        "memory": {
+          "current": 2048,
+          "recommended": 1024,
+          "monthlySavings": 300
+        }
+      },
+      "totalMonthlySavings": 500
+    },
+    {
+      "clusterId": "prod-aks",
+      "namespace": "monitoring",
+      "controllerKind": "deployment",
+      "controllerName": "logging-service",
+      "container": "fluentd",
+      "recommendations": {
+        "cpu": {
+          "current": 500,
+          "recommended": 200,
+          "monthlySavings": 150
+        },
+        "memory": {
+          "current": 1024,
+          "recommended": 512,
+          "monthlySavings": 250
+        }
+      },
+      "totalMonthlySavings": 400
+    }
+  ],
+  "underutilizedNodes": [
+    {
+      "node": "aks-nodepool1-12345678-0",
+      "monthlySavings": 1200,
+      "providerId": "azure:///node/id",
+      "recommendedInstanceType": "Standard_D4s_v3"
+    }
+  ]
+}

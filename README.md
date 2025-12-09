@@ -85,7 +85,29 @@ kubecost recommendations export > recommendations.json
 - [ ] CI/CD pipeline integration
 - [ ] JSON/HTML report formats
 
-## Use Cases
+
+## Integration with Kubecost
+
+kosva works with Kubecost to validate cost optimization recommendations:
+
+### Quick Start with Kubecost
+```bash
+# If you have Kubecost installed:
+kubectl port-forward -n kubecost svc/kubecost-cost-analyzer 9090:9090
+
+# Run validation:
+kosva check --kubecost-url http://localhost:9090
+```
+
+### Demo Mode (No Kubecost Required)
+```bash
+# Use sample data:
+kosva check --input examples/kubecost-sample.json
+```
+
+See [docs/kubecost-setup.md](docs/kubecost-setup.md) for detailed setup instructions.
+
+# Use Cases
 
 ### DevOps Engineers
 **Problem:** "Security keeps blocking our cost optimizations"  
