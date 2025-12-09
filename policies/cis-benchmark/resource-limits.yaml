@@ -1,0 +1,30 @@
+name: "CIS 5.10 - Resource Limit Safety"
+description: "Validates safe resource limit reductions"
+cis_mapping: "CIS 5.10"
+severity: "MEDIUM"
+enabled: true
+
+rules:
+  - id: "limits-001"
+    name: "Block aggressive memory reduction"
+    check_type: "right-size"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["deployment", "statefulset", "daemonset"]
+    action: "block"
+    risk_score: 7.5
+    message: "Memory reduction exceeds 50% - high risk of OOM kills and service disruption"
+    remediation: "Implement gradual reduction (25-30% max) and monitor for OOM events over 2 weeks"
+
+  - id: "limits-002"
+    name: "Warn on moderate reduction"
+    check_type: "right-size"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production", "staging"]
+    action: "warn"
+    risk_score: 5.0
+    message: "Memory reduction of 30-50% carries moderate risk in production-like environment"
+    remediation: "Implement gradual rollout with canary deployment and monitor memory usage"

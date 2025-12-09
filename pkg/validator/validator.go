@@ -5,10 +5,35 @@ import (
 
 	"github.com/opscart/kosva/pkg/checks"
 	"github.com/opscart/kosva/pkg/kubecost"
+	"github.com/opscart/kosva/pkg/policyengine"
 )
 
-// ValidateRecommendation runs all security checks on a single recommendation
-func ValidateRecommendation(rec kubecost.Recommendation) checks.ValidationResult {
+// Validator performs security validation
+type Validator struct {
+	PolicyEngine *policyengine.Engine
+}
+
+// NewValidator creates a new validator
+func NewValidator(policyDir string) (*Validator, error) {
+	// Load policies
+	policies, err := policyengine.LoadPolicies(policyDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load policies: %w", err)
+	}
+
+	if len(policies) == 0 {
+		return nil, fmt.Errorf("no policies loaded from %s", policyDir)
+	}
+
+	fmt.Printf("Loaded %d policies\n", len(policies))
+
+	return &Validator{
+		PolicyEngine: policyengine.NewEngine(policies),
+	}, nil
+}
+
+// ValidateRecommendation runs all policies on a recommendation
+func (v *Validator) ValidateRecommendation(rec kubecost.Recommendation) checks.ValidationResult {
 	result := checks.ValidationResult{
 		WorkloadName:       rec.Workload,
 		RecommendationType: rec.Type,
@@ -16,53 +41,58 @@ func ValidateRecommendation(rec kubecost.Recommendation) checks.ValidationResult
 		Checks:             []checks.CheckResult{},
 	}
 
-	// Run appropriate checks based on recommendation type
-	switch rec.Type {
-	case "spot-instance":
-		spotCheck := checks.CheckSpotInstanceSafety(rec)
-		result.Checks = append(result.Checks, spotCheck)
+	// Run policy engine
+	policyResults := v.PolicyEngine.Evaluate(rec)
 
-		// Determine approval
-		result.Approved = spotCheck.Passed
-
-		// Suggest alternative if blocked
-		if !spotCheck.Passed {
-			result.Alternative = fmt.Sprintf("Use Reserved Instances → ~$%.0f/month savings (30%% of Spot savings, but compliant)", rec.Savings*0.3)
+	// Convert policy results to check results
+	for _, pr := range policyResults {
+		checkResult := checks.CheckResult{
+			Passed:      pr.Passed,
+			Severity:    pr.Severity,
+			RiskScore:   pr.RiskScore,
+			CheckName:   fmt.Sprintf("%s - %s", pr.PolicyName, pr.RuleName),
+			Message:     pr.Message,
+			Remediation: pr.Remediation,
 		}
+		result.Checks = append(result.Checks, checkResult)
+	}
 
-	case "right-size":
-		limitsCheck := checks.CheckResourceLimits(rec)
-		result.Checks = append(result.Checks, limitsCheck)
-
-		result.Approved = limitsCheck.Passed
-
-		if !limitsCheck.Passed {
-			result.Alternative = "Reduce resources by 25% instead of recommended amount"
+	// Determine overall approval (fail if any check blocks)
+	result.Approved = true
+	for _, check := range result.Checks {
+		if !check.Passed {
+			result.Approved = false
+			break
 		}
+	}
 
-	default:
-		// Unknown type - allow but warn
-		result.Approved = true
-		result.Checks = append(result.Checks, checks.CheckResult{
-			Passed:    true,
-			Severity:  "INFO",
-			RiskScore: 0,
-			CheckName: "Unknown recommendation type",
-			Message:   fmt.Sprintf("No specific security checks for type: %s", rec.Type),
-		})
+	// Generate alternative if blocked
+	if !result.Approved {
+		result.Alternative = generateAlternative(rec)
 	}
 
 	return result
 }
 
 // ValidateAll runs validation on all recommendations
-func ValidateAll(recList *kubecost.RecommendationList) []checks.ValidationResult {
+func (v *Validator) ValidateAll(recList *kubecost.RecommendationList) []checks.ValidationResult {
 	results := []checks.ValidationResult{}
 
 	for _, rec := range recList.Recommendations {
-		result := ValidateRecommendation(rec)
+		result := v.ValidateRecommendation(rec)
 		results = append(results, result)
 	}
 
 	return results
+}
+
+func generateAlternative(rec kubecost.Recommendation) string {
+	switch rec.Type {
+	case "spot-instance":
+		return fmt.Sprintf("Use Reserved Instances -> ~$%.0f/month savings (30%% of Spot savings, compliant)", rec.Savings*0.3)
+	case "right-size":
+		return "Implement gradual reduction (25% max) with monitoring"
+	default:
+		return "Review with security team for compliant alternative"
+	}
 }

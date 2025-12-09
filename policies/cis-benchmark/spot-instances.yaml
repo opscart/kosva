@@ -1,0 +1,45 @@
+name: "CIS 5.7 - Spot Instance Suitability"
+description: "Validates whether workloads are suitable for Spot instances"
+cis_mapping: "CIS 5.7"
+severity: "HIGH"
+enabled: true
+
+rules:
+  - id: "spot-001"
+    name: "Block Spot for critical workloads"
+    check_type: "spot-instance"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["payment", "auth", "database", "billing", "order", "checkout"]
+    action: "block"
+    risk_score: 8.5
+    message: "Critical workload cannot run on Spot instances - interruptions with 2-minute notice create service disruption risk"
+    remediation: "Use Reserved Instances for 30% savings with guaranteed availability, or redesign for fault tolerance"
+
+  - id: "spot-002"
+    name: "Block Spot for production namespace"
+    check_type: "spot-instance"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production"]
+    action: "block"
+    risk_score: 6.5
+    message: "Production namespace detected - Spot instances may impact SLA compliance"
+    remediation: "Use Spot only for non-production environments or implement proper interruption handling"
+
+  - id: "spot-003"
+    name: "Warn for API services"
+    check_type: "spot-instance"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["api", "service"]
+      - field: "namespace"
+        operator: "contains"
+        values: ["staging", "dev"]
+    action: "warn"
+    risk_score: 3.0
+    message: "API services on Spot may experience intermittent availability"
+    remediation: "Ensure proper retry logic and circuit breakers are implemented"
