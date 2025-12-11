@@ -326,25 +326,21 @@ Save to `policies/custom/company-policy.yaml` and kosva will load it automatical
 
 ## Roadmap
 
-### v0.3 (Next 2 weeks)
-- [ ] Compliance templates: PCI-DSS, HIPAA, SOC2
-- [ ] JSON output format for automation
-- [ ] Additional security checks (network policies, RBAC)
+**Current Status:** Alpha (v0.2.0) - Core functionality working, production-tested internally
 
-### v0.4 (Month 2)
-- [ ] Kubernetes Operator mode
-- [ ] Continuous validation
-- [ ] Slack/Teams notifications
+**Coming Soon:**
+- JSON output format (for CI/CD automation)
+- Configurable exit codes
+- More examples and documentation
 
-### v0.5 (Month 3)
-- [ ] GitHub Action
-- [ ] Azure DevOps extension
-- [ ] GitLab CI integration
+**Everything else depends on your feedback.** 
 
-### Future
-- [ ] OPA/Rego integration (use kosva with existing policies)
-- [ ] Helm chart support
-- [ ] Policy marketplace
+What would make kosva more useful for your team?
+- Additional policy checks?
+- Different tool integrations?
+- Specific compliance frameworks?
+
+[Open an issue](https://github.com/opscart/kosva/issues) to share your needs!
 
 ## Contributing
 
