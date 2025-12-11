@@ -381,7 +381,6 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 Built by [@opscart](https://github.com/opscart) - Senior DevOps Engineer with 10+ years managing cloud-native infrastructure at scale.
 
-**Website:** [opscart.com](https://opscart.com)  
 **Problem:** Cost optimizations kept getting blocked by security  
 **Solution:** Validate before proposing
 
