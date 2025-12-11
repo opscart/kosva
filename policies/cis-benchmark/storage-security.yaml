@@ -1,0 +1,42 @@
+name: "CIS 5.4.1 - Storage Security"
+description: "Validates storage class security and encryption requirements"
+cis_mapping: "CIS 5.4.1"
+severity: "HIGH"
+enabled: true
+
+rules:
+  - id: "storage-001"
+    name: "Block unencrypted storage for sensitive workloads"
+    check_type: "storage-security"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["payment", "database", "auth", "user", "customer"]
+    action: "block"
+    risk_score: 9.5
+    message: "Sensitive workloads require encrypted storage - data-at-rest encryption missing"
+    remediation: "Use storage classes with encryption enabled (e.g., Azure Disk Encryption, AWS EBS encryption)"
+
+  - id: "storage-002"
+    name: "Block ReadWriteMany for single-use workloads"
+    check_type: "storage-security"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production"]
+    action: "block"
+    risk_score: 7.0
+    message: "ReadWriteMany access mode creates security risk - use ReadWriteOnce for single-pod workloads"
+    remediation: "Change PVC access mode to ReadWriteOnce unless multiple pods require simultaneous write access"
+
+  - id: "storage-003"
+    name: "Warn on default storage class usage"
+    check_type: "storage-security"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production", "staging"]
+    action: "warn"
+    risk_score: 4.5
+    message: "Default storage class may not meet performance/security requirements"
+    remediation: "Explicitly specify storage class matching workload requirements (performance tier, encryption, backup)"

@@ -1,0 +1,45 @@
+name: "CIS 5.7.3 - Multi-Tenancy Isolation"
+description: "Validates workload isolation and namespace security boundaries"
+cis_mapping: "CIS 5.7.3"
+severity: "HIGH"
+enabled: true
+
+rules:
+  - id: "tenant-001"
+    name: "Block mixing regulated and non-regulated workloads"
+    check_type: "multi-tenancy"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["payment", "pci", "hipaa", "compliance", "financial"]
+    action: "block"
+    risk_score: 9.0
+    message: "Regulated workload cannot share infrastructure with non-regulated workloads - compliance violation"
+    remediation: "Use dedicated node pools with taints/tolerations for PCI-DSS/HIPAA workloads"
+
+  - id: "tenant-002"
+    name: "Warn on production and non-production mixing"
+    check_type: "multi-tenancy"
+    conditions:
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production"]
+    action: "warn"
+    risk_score: 6.0
+    message: "Production workloads sharing nodes with non-production may impact stability"
+    remediation: "Use separate node pools for production and non-production environments"
+
+  - id: "tenant-003"
+    name: "Block sensitive data workloads without isolation"
+    check_type: "multi-tenancy"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["database", "redis", "postgres", "mysql", "mongodb"]
+      - field: "namespace"
+        operator: "contains"
+        values: ["prod", "production"]
+    action: "block"
+    risk_score: 8.0
+    message: "Database workloads require dedicated nodes for security and performance isolation"
+    remediation: "Deploy databases on dedicated node pools with network policies"

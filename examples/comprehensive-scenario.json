@@ -1,0 +1,68 @@
+{
+  "cluster": "prod-aks-pharma",
+  "timestamp": "2024-12-10T00:00:00Z",
+  "recommendations": [
+    {
+      "type": "spot-instance",
+      "workload": "deployment/payment-api",
+      "namespace": "production",
+      "savings": 800.00,
+      "current": {"cpu": "1000m", "memory": "2Gi"},
+      "recommended": {"cpu": "1000m", "memory": "2Gi"}
+    },
+    {
+      "type": "spot-instance",
+      "workload": "deployment/batch-processor",
+      "namespace": "background-jobs",
+      "savings": 1200.00,
+      "current": {"cpu": "2000m", "memory": "4Gi"},
+      "recommended": {"cpu": "2000m", "memory": "4Gi"}
+    },
+    {
+      "type": "right-size",
+      "workload": "deployment/logging-service",
+      "namespace": "monitoring",
+      "savings": 400.00,
+      "current": {"cpu": "500m", "memory": "1Gi"},
+      "recommended": {"cpu": "200m", "memory": "512Mi"}
+    },
+    {
+      "type": "multi-tenancy",
+      "workload": "deployment/payment-processor",
+      "namespace": "pci-compliance",
+      "savings": 2500.00,
+      "node_pool": "shared-pool",
+      "current": {"cpu": "4000m", "memory": "8Gi"},
+      "recommended": {"cpu": "4000m", "memory": "8Gi"}
+    },
+    {
+      "type": "multi-tenancy",
+      "workload": "deployment/api-gateway",
+      "namespace": "production",
+      "savings": 800.00,
+      "node_pool": "shared-pool",
+      "current": {"cpu": "2000m", "memory": "4Gi"},
+      "recommended": {"cpu": "2000m", "memory": "4Gi"}
+    },
+    {
+      "type": "storage-security",
+      "workload": "statefulset/customer-database",
+      "namespace": "production",
+      "savings": 600.00,
+      "storage_class": "default",
+      "access_mode": "ReadWriteOnce",
+      "current": {"cpu": "2000m", "memory": "8Gi"},
+      "recommended": {"cpu": "2000m", "memory": "8Gi"}
+    },
+    {
+      "type": "storage-security",
+      "workload": "deployment/file-service",
+      "namespace": "production",
+      "savings": 300.00,
+      "storage_class": "standard",
+      "access_mode": "ReadWriteMany",
+      "current": {"cpu": "1000m", "memory": "2Gi"},
+      "recommended": {"cpu": "1000m", "memory": "2Gi"}
+    }
+  ]
+}
