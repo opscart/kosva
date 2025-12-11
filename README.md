@@ -138,17 +138,66 @@ kubectl port-forward -n kubecost svc/kubecost-cost-analyzer 9090:9090
 
 **Result:** 93% time saved, 33% more savings achieved
 
-## Why Not Use X?
+### Comparison with Existing Tools
 
 | Tool | What It Does | What It Doesn't | Why kosva? |
 |------|--------------|-----------------|------------|
 | **OPA/Gatekeeper** | General policy enforcement | Not cost-aware, requires Rego expertise | Pre-built cost+security policies, no Rego needed |
 | **Kyverno** | Kubernetes policy engine | Not integrated with cost tools | Direct Kubecost integration with CIS mapping |
 | **Polaris/kube-score** | K8s best practices | No cost optimization focus | Validates cost recommendations specifically |
+| **kube-bench** | CIS cluster auditing | Audits configuration, not cost changes | Validates proposed cost optimizations |
 | **Kubecost alone** | Cost recommendations | No security validation | Adds security validation layer |
 | **Manual review** | Human judgment | Slow, inconsistent, doesn't scale | Automated, consistent, instant feedback |
 
-**Key differentiator:** kosva is purpose-built to validate cost optimizations against security policies. It doesn't replace OPA/Kyverno - it complements them by pre-validating before enforcement.
+### What About General Security Scanning?
+
+**kosva is NOT a replacement for cluster security scanners.** It has a specific mission:
+
+**kosva's Mission:** Validate cost optimization recommendations against security policies
+
+**NOT kosva's Mission:** General Kubernetes cluster security auditing
+
+### Tool Positioning
+
+| Tool | Focus | When to Use |
+|------|-------|-------------|
+| **kube-bench** | Cluster CIS compliance audit | Run weekly to audit cluster security posture |
+| **Polaris** | Workload best practices | Check running workloads for misconfigurations |
+| **Kubecost** | Cost analysis | Find cost optimization opportunities |
+| **kosva** | Cost recommendation validation | Before implementing Kubecost recommendations |
+| **OPA/Kyverno** | Runtime policy enforcement | Enforce policies on deployment |
+
+**Workflow:**
+```
+1. Kubecost finds $15K/month savings opportunities
+2. kosva validates which are security-compliant ($8K safe)
+3. You propose the safe ones to security
+4. OPA/Kyverno enforces policies at runtime
+5. kube-bench audits cluster monthly
+```
+
+### What kosva DOES Validate
+
+✅ **Cost Optimization Recommendations:**
+- Spot instance suitability (CIS 5.7)
+- Resource limit safety (CIS 5.10)
+- Multi-tenancy isolation (CIS 5.7.3)
+- Storage security (CIS 5.4.1)
+
+### What kosva Does NOT Validate
+
+❌ **General Cluster Configuration:**
+- Network policies (use kube-bench)
+- Pod security standards (use Polaris)
+- RBAC configuration (use kube-bench)
+- Immutable root filesystems (use kube-score)
+
+**Why?** Those checks audit cluster configuration, not cost optimization recommendations. Use specialized tools for comprehensive cluster scanning.
+
+### Key Differentiator
+
+kosva fills the gap between cost tools and security tools - it validates that cost optimizations won't violate security policies BEFORE you waste time proposing them."
+
 
 ## CI/CD Integration
 

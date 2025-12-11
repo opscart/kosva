@@ -15,18 +15,33 @@ Found a bug? False positive? False negative?
 - Actual behavior
 - kosva version: `kosva version`
 
-### 2. Add Security Checks
+### 2. Add Cost-Related Security Checks
 
-We need more CIS Kubernetes Benchmark checks! Current coverage:
+We focus on checks that validate **cost optimization recommendations**, not general cluster auditing.
 
-- [x] CIS 5.7 - Spot Instance Suitability
-- [x] CIS 5.10 - Resource Limit Safety
-- [x] CIS 5.7.3 - Multi-Tenancy Isolation
-- [x] CIS 5.4.1 - Storage Security
-- [ ] CIS 5.3 - Network Policy Requirements
-- [ ] CIS 5.4.2 - Immutable Root Filesystem
-- [ ] CIS 5.2 - Pod Security Standards
-- [ ] CIS 5.1 - RBAC Configuration
+**Current Coverage (v0.2):**
+- ✅ CIS 5.7 - Spot Instance Suitability
+- ✅ CIS 5.10 - Resource Limit Safety
+- ✅ CIS 5.7.3 - Multi-Tenancy Isolation
+- ✅ CIS 5.4.1 - Storage Security
+
+**Wanted (Cost-Related Checks):**
+- [ ] Node pool rightsizing validation
+- [ ] Committed use discount safety checks
+- [ ] Cluster autoscaler configuration validation
+- [ ] Idle resource cleanup safety
+- [ ] Namespace quota impact validation
+- [ ] Reserved capacity commitment validation
+
+**Out of Scope (Use Other Tools):**
+- ❌ CIS 5.3 - Network Policy Requirements (use kube-bench)
+- ❌ CIS 5.4.2 - Immutable Root Filesystem (use Polaris)
+- ❌ CIS 5.2 - Pod Security Standards (use kube-score)
+- ❌ CIS 5.1 - RBAC Configuration (use kube-bench)
+
+**Why this scope?** kosva validates cost recommendations against security, not general cluster security. For comprehensive cluster auditing, use kube-bench, Polaris, or Checkov.
+
+**To add a cost-related check:**
 
 **To add a check:**
 
