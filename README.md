@@ -1,147 +1,332 @@
 # kosva - Kubernetes Optimization Security Validator
 
-**Stop implementing unsafe cost optimizations.**
+**Validate Kubecost recommendations against CIS benchmarks before implementation.**
 
-`kosva` validates Kubernetes cost optimization recommendations against security policies and compliance frameworks before you implement them.
+kosva prevents unsafe cost optimizations by checking them against security policies and compliance frameworks. Stop wasting time on recommendations that security will reject.
 
 ## The Problem
 
-Cost optimization tools like Kubecost suggest ways to reduce cloud spend. But many optimizations create security vulnerabilities:
+Cost optimization tools like Kubecost suggest ways to reduce cloud spend, but many optimizations create security vulnerabilities:
 
-- **Spot instances** → Critical services can be interrupted with 2-minute notice
-- **Under-provisioned resources** → OOM kills create denial-of-service vulnerabilities
-- **Multi-tenancy** → Compliance violations in regulated industries
+- **Spot instances for critical services** → 2-minute interruption notices violate SLA requirements
+- **Aggressive resource reductions** → OOM kills create denial-of-service vulnerabilities  
+- **Shared infrastructure for regulated workloads** → PCI-DSS/HIPAA compliance violations
+- **Unencrypted storage for sensitive data** → Data-at-rest encryption requirements not met
 
-Security teams block these recommendations, wasting engineering time.
+**Result:** Security teams block recommendations, engineering time is wasted, and cost savings opportunities are lost.
 
 ## The Solution
 
-`kosva` validates recommendations **BEFORE** implementation:
+kosva validates cost recommendations BEFORE proposing them to security teams:
 ```bash
-$ ./kosva check --input kubecost-recommendations.json
+$ kosva check --input kubecost-recommendations.json
 
-══════════════════════════════════════════════════════════════════════
+Loading: kubecost-recommendations.json
+Loaded 7 recommendations
+Loading policies from: ./policies
+Loaded 4 policies
+Running validation...
+
+======================================================================
   KOSVA VALIDATION REPORT
-══════════════════════════════════════════════════════════════════════
+======================================================================
 
-Total Recommendations: 2
-Potential Savings: $1200/month
+Total Recommendations: 7
+Potential Savings: $6600/month
 
-❌ BLOCKED RECOMMENDATIONS (1):
-──────────────────────────────────────────────────────────────────────
-1. deployment/payment-api → Would save $800/month
+SAFE RECOMMENDATIONS (1):
+----------------------------------------------------------------------
+1. deployment/batch-processor -> $1200/month
    Type: spot-instance
-   ✗ CIS 5.7 - Spot Instance Suitability [HIGH] (Risk: 8.5/10)
-     ⚠️  Workload appears to be critical. Spot instances can be interrupted.
-     💡 Use Reserved Instances for guaranteed availability.
+   [PASS] CIS 5.7 - Spot Instance Suitability (Risk: 2.0/10)
 
-   🔄 SAFE ALTERNATIVE:
-      Use Reserved Instances → ~$240/month savings (compliant)
+BLOCKED RECOMMENDATIONS (6):
+----------------------------------------------------------------------
+1. deployment/payment-processor -> Would save $2500/month
+   Type: multi-tenancy
+   [FAIL] CIS 5.7.3 - Multi-Tenancy Isolation [HIGH] (Risk: 9.0/10)
+          Regulated workload cannot share infrastructure
+          Remediation: Use dedicated node pools with taints/tolerations
 
-✅ SAFE RECOMMENDATIONS (1):
-──────────────────────────────────────────────────────────────────────
-1. deployment/logging-service → $400/month
-   Type: right-size
-   ✓ CIS 5.10 - Resource Limit Safety (Risk: 1.5/10)
+[... more blocked recommendations ...]
 
-══════════════════════════════════════════════════════════════════════
-SUMMARY: $400/$1200 safe (33% of potential savings)
-══════════════════════════════════════════════════════════════════════
+======================================================================
+SUMMARY: $1200/$6600 safe (18% of potential savings)
+======================================================================
 ```
 
+**Time saved:** 3+ weeks of security review  
+**Clear answer:** Which optimizations are safe to implement
+
 ## Quick Start
+
+### Installation
 ```bash
-# Install Go 1.21+
-# Clone and build
+# Clone repository
 git clone https://github.com/opscart/kosva.git
 cd kosva
+
+# Build
 go build -o kosva cmd/kosva/main.go
 
-# Export Kubecost recommendations
-kubecost recommendations export > recommendations.json
+# Verify
+./kosva version
+```
+
+### Basic Usage
+```bash
+# Export recommendations from Kubecost
+# (Via UI: Savings -> Export as JSON)
+# (Via API: curl http://kubecost-url/model/savings > recs.json)
 
 # Validate
-./kosva check --input recommendations.json
+./kosva check --input kubecost-recommendations.json
+
+# List available policies
+./kosva policies
+
+# Use custom policy directory
+./kosva check --input recs.json --policy-dir /path/to/policies
+```
+
+### Direct API Integration
+```bash
+# Port-forward Kubecost
+kubectl port-forward -n kubecost svc/kubecost-cost-analyzer 9090:9090
+
+# Validate directly from API
+./kosva check --kubecost-url http://localhost:9090
 ```
 
 ## Features
 
-### Current (v0.1.0-alpha)
+### Current (v0.2.0-alpha)
 
-- ✅ Validates against CIS Kubernetes Benchmark checks
-- ✅ Spot instance safety validation (CIS 5.7)
-- ✅ Resource limit safety checks (CIS 5.10)
-- ✅ Risk scoring (0-10 scale)
-- ✅ Safe alternative suggestions
-- ✅ Integration with Kubecost JSON exports
+- **YAML-based policy engine** - Customize without editing code
+- **CIS Kubernetes Benchmark policies** - Pre-built security checks
+- **Risk scoring** - 0-10 scale for each recommendation
+- **Safe alternatives** - Suggestions for blocked optimizations
+- **Kubecost integration** - File-based and API-based validation
 
-### Coming Soon
+### Security Checks (4 Policies, 11 Rules)
 
-- [ ] YAML-based policy engine
-- [ ] PCI-DSS compliance policies
-- [ ] HIPAA compliance policies
-- [ ] Multi-tenancy security checks
-- [ ] Kubernetes Operator mode
-- [ ] CI/CD pipeline integration
-- [ ] JSON/HTML report formats
+| Policy | CIS Mapping | Checks |
+|--------|-------------|--------|
+| **Spot Instance Suitability** | CIS 5.7 | Critical workload detection, production namespace validation, API service warnings |
+| **Resource Limit Safety** | CIS 5.10 | Aggressive reduction blocking (>50%), moderate reduction warnings (30-50%) |
+| **Multi-Tenancy Isolation** | CIS 5.7.3 | Regulated workload isolation, prod/non-prod separation, database isolation |
+| **Storage Security** | CIS 5.4.1 | Encryption requirements, access mode validation, storage class compliance |
 
+## Real-World Use Case
 
-## Integration with Kubecost
+**Scenario:** FinOps exports Kubecost recommendations showing $15K/month in potential savings.
 
-kosva works with Kubecost to validate cost optimization recommendations:
+**Without kosva:**
+1. FinOps proposes all 10 recommendations (3 weeks)
+2. Security reviews manually (2 weeks)  
+3. 60% rejected for security reasons
+4. Back-and-forth on alternatives (1 week)
+5. **Total:** 6 weeks, $6K/month approved
 
-### Quick Start with Kubecost
+**With kosva:**
+1. Export Kubecost recommendations (5 min)
+2. Run: `kosva check --input recs.json` (30 sec)
+3. Get instant feedback: $8K safe, $7K blocked with alternatives
+4. Submit only safe recommendations (1 day)
+5. Security approves (2 days)
+6. **Total:** 3 days, $8K/month approved
+
+**Result:** 93% time saved, 33% more savings achieved
+
+## Why Not Use X?
+
+| Tool | What It Does | What It Doesn't | Why kosva? |
+|------|--------------|-----------------|------------|
+| **OPA/Gatekeeper** | General policy enforcement | Not cost-aware, requires Rego expertise | Pre-built cost+security policies, no Rego needed |
+| **Kyverno** | Kubernetes policy engine | Not integrated with cost tools | Direct Kubecost integration with CIS mapping |
+| **Polaris/kube-score** | K8s best practices | No cost optimization focus | Validates cost recommendations specifically |
+| **Kubecost alone** | Cost recommendations | No security validation | Adds security validation layer |
+| **Manual review** | Human judgment | Slow, inconsistent, doesn't scale | Automated, consistent, instant feedback |
+
+**Key differentiator:** kosva is purpose-built to validate cost optimizations against security policies. It doesn't replace OPA/Kyverno - it complements them by pre-validating before enforcement.
+
+## CI/CD Integration
+
+### Exit Codes
 ```bash
-# If you have Kubecost installed:
-kubectl port-forward -n kubecost svc/kubecost-cost-analyzer 9090:9090
-
-# Run validation:
-kosva check --kubecost-url http://localhost:9090
+0 = All recommendations safe
+1 = Some blocked, alternatives available  
+2 = Critical violations, no safe alternatives
+3 = Error (invalid input, API failure)
 ```
 
-### Demo Mode (No Kubecost Required)
-```bash
-# Use sample data:
-kosva check --input examples/kubecost-sample.json
+### GitHub Actions Example
+```yaml
+name: Validate Cost Recommendations
+
+on:
+  pull_request:
+    paths:
+      - 'cost-optimization/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install kosva
+        run: |
+          wget https://github.com/opscart/kosva/releases/latest/kosva
+          chmod +x kosva
+      
+      - name: Validate recommendations
+        run: |
+          ./kosva check \
+            --input cost-optimization/kubecost-recs.json \
+            --policy-dir ./policies \
+            --fail-on high
+      
+      - name: Comment PR
+        if: failure()
+        run: echo "Security validation failed - blocked recommendations found"
 ```
 
-See [docs/kubecost-setup.md](docs/kubecost-setup.md) for detailed setup instructions.
+### Azure DevOps Example
+```yaml
+- task: Bash@3
+  displayName: 'Validate Cost Recommendations'
+  inputs:
+    targetType: 'inline'
+    script: |
+      ./kosva check --input $(Build.SourcesDirectory)/recommendations.json
+      if [ $? -eq 2 ]; then
+        echo "##vso[task.logissue type=error]Critical security violations found"
+        exit 1
+      fi
+```
 
-# Use Cases
+## Customization
 
-### DevOps Engineers
-**Problem:** "Security keeps blocking our cost optimizations"  
-**Solution:** Validate recommendations before proposing to security team
+### Creating Custom Policies
 
-### Security Teams
-**Problem:** "DevOps implements changes that create vulnerabilities"  
-**Solution:** Automated pre-implementation security gates
+Policies are YAML files in the `policies/` directory:
+```yaml
+name: "Custom Policy Name"
+description: "What this policy checks"
+cis_mapping: "CIS X.Y"
+severity: "HIGH"
+enabled: true
 
-### FinOps Teams
-**Problem:** "Don't know which cost savings are safe to implement"  
-**Solution:** Risk-scored recommendations with compliance validation
+rules:
+  - id: "custom-001"
+    name: "Rule name"
+    check_type: "spot-instance"  # or right-size, multi-tenancy, storage-security
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["my-app", "critical-service"]
+    action: "block"
+    risk_score: 8.5
+    message: "Why this is blocked"
+    remediation: "What to do instead"
+```
 
-## Project Status
+**Supported operators:** `contains`, `equals`, `starts_with`, `regex`
 
-🚧 **Alpha Release** - Core functionality working, under active development.
+**Example: Block Spot for your specific apps**
+```yaml
+name: "Company-Specific Spot Policy"
+description: "Blocks Spot instances for our critical applications"
+cis_mapping: "CIS 5.7"
+severity: "HIGH"
+enabled: true
 
-Built by DevOps engineers managing 500+ cores in production who've been burned by unsafe optimizations.
+rules:
+  - id: "company-001"
+    name: "Block Spot for revenue-generating services"
+    check_type: "spot-instance"
+    conditions:
+      - field: "workload"
+        operator: "contains"
+        values: ["checkout", "order-processing", "payment-gateway"]
+    action: "block"
+    risk_score: 9.0
+    message: "Revenue-generating services require guaranteed availability"
+    remediation: "Use Reserved Instances or Savings Plans"
+```
 
-## Contributing
+Save to `policies/custom/company-policy.yaml` and kosva will load it automatically.
 
-Contributions welcome! This project started because:
-1. Cost tools don't validate security
-2. Security tools don't consider cost
-3. Nobody bridges the gap
+## Production Status
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+**Current Status:** Alpha (v0.2.0)
+
+**Safe for:**
+- Pre-production validation
+- CI/CD advisory checks  
+- Manual cost review workflows
+
+**Not yet for:**
+- Automated enforcement (advisory only)
+- Real-time blocking (no operator mode yet)
+
+**Production users:** Testing internally at Fortune 500 pharmaceutical company (500+ AKS cores)
+
+**Looking for:** Early adopters to validate real-world scenarios
 
 ## Roadmap
 
-- [x] **Week 1-2:** Core validation engine (✅ DONE)
-- [ ] **Week 3-4:** Policy engine with compliance templates
-- [ ] **Week 5-6:** Kubernetes Operator mode
-- [ ] **Week 7-8:** CI/CD integration and documentation
+### v0.3 (Next 2 weeks)
+- [ ] Compliance templates: PCI-DSS, HIPAA, SOC2
+- [ ] JSON output format for automation
+- [ ] Additional security checks (network policies, RBAC)
+
+### v0.4 (Month 2)
+- [ ] Kubernetes Operator mode
+- [ ] Continuous validation
+- [ ] Slack/Teams notifications
+
+### v0.5 (Month 3)
+- [ ] GitHub Action
+- [ ] Azure DevOps extension
+- [ ] GitLab CI integration
+
+### Future
+- [ ] OPA/Rego integration (use kosva with existing policies)
+- [ ] Helm chart support
+- [ ] Policy marketplace
+
+## Contributing
+
+Contributions welcome! This project exists because cost tools don't validate security, and security tools don't consider cost.
+
+**What we need:**
+- Additional CIS benchmark checks
+- Compliance framework policies (PCI-DSS, HIPAA, SOC2)
+- Integration with other cost tools
+- Real-world validation scenarios
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Architecture
+```
+kosva/
+├── cmd/kosva/              # CLI entry point
+├── pkg/
+│   ├── policyengine/       # YAML policy loader and evaluator
+│   ├── kubecost/           # Kubecost API integration
+│   ├── checks/             # Validation result types
+│   ├── validator/          # Validation orchestration
+│   └── report/             # Output formatting
+├── policies/               # Security policy definitions
+│   └── cis-benchmark/
+│       ├── spot-instances.yaml
+│       ├── resource-limits.yaml
+│       ├── multi-tenancy.yaml
+│       └── storage-security.yaml
+└── examples/               # Sample data
+```
 
 ## License
 
@@ -151,8 +336,10 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 Built by [@opscart](https://github.com/opscart) - Senior DevOps Engineer with 10+ years managing cloud-native infrastructure at scale.
 
-**Blog:** [opscart.com](https://opscart.com)
+**Website:** [opscart.com](https://opscart.com)  
+**Problem:** Cost optimizations kept getting blocked by security  
+**Solution:** Validate before proposing
 
 ---
 
-**⭐ If this tool saves you from implementing an unsafe optimization, please star the repo!**
+**If kosva saves you from implementing an unsafe optimization, please star the repo!**
